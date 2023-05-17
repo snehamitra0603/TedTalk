@@ -1,0 +1,11 @@
+name: "my-website"
+output_dir: "docs"
+navbar:
+  title: "Text analytics"
+  
+output:
+  html_document:
+    theme: cosmo
+    toc: true
+    highlight: textmate
+    css: styles.css

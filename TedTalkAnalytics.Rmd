@@ -1,0 +1,206 @@
+---
+title: "Text analytics"
+author: "Sneha Mitra"
+subtitle: Text analytics of the TED talks by Seth Godin and Robert Gupta
+output: github_document
+ # html_document: default
+  #word_document: default
+#  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+### Don't delete this setup code chunk from your file
+knitr::opts_chunk$set(echo = FALSE,warning = FALSE, message = FALSE)   ## DON'T ALTER THIS: this is to prevent printing the code in your "html" file.
+
+# Extend the list below to load all the packages required for your analyses here:
+#===============================================================================
+library(tidyverse)
+library(tidytext)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(ggthemes)
+library(ggrepel)
+library(knitr)
+# load the 'ted_talks' data
+#=========================
+data(ted_talks)
+# filter the tedtalk for speaker Seth Godin and Rober Gupta
+#=========================
+ted_talks = read.csv('data/TEDtalk.csv',na.strings=c("",NULL,"NULL"))
+ted_talks <- ted_talks %>%
+  filter(speaker %in% c("Seth Godin", "Robert Gupta"))
+```
+## Introduction
+
+The project aims at comparing the TED talks delivered by two speakers **Seth Godin** and **Robert Gupta**  in terms word frequencies and whether there is correlation between the sentiments of both speakers.
+
+The talks involved in this project for analysis are  as follows :
+
+"How to get your ideas to spread" and "The tribes we lead" delivered by Seth Godin in the year 2003 and 2009 respectively.
+
+"Music is medicine, music is sanity" and "On violin and cello, "Passacaglia" delivered by  Robert Gupta  in  2010 and 2011 respectively.
+
+Seth Godin is an internationally recognized speaker, popular blogger, and global thought leader in innovative business ideas and marketing strategy on the other hand Robert Gupta is a  violinist with the LA Philharmonic  and maintains a passionate parallel interest in neurobiology and mental health issues. 
+
+## Methods
+
+In order to compare the words frequencies of both speakers ,frequently used word is counted by each speaker which will be further  visualized in bar graphs.Also comparison of words used by both speakers is performed by selecting only the words whose sum of frequencies across the talks of two speakers is more than 10 times to determine the common words used which will be further plotted for visualization.
+
+For sentiment analysis the bing library is used which simply associates a word with a negative or positive valence. At the end we  count how many words are positive or negative and identify the percentage of both negative and positive sentiments to determine the proportion of sentiments for each speaker.
+
+All the above operations are done after the tokenization and removal of stop words.
+
+## Results
+
+The two plots below display the frequency of the words used by the respective speakers in their talks.The top three words with highest frequencies  "people","can" and "get" are used by Seth Godin while "Nathaniel","us" and "talking" are the three most used words by Robert Gupta.The word "music" and "violin" with  highest frequencies interprets the music and violin being played  in Rober's talk.The word "laughter" in relatively high frequency in  Seth's text indicate audience's joyful reaction to his talks whereas "applause" in Robert's text indicate admiration of the music being played in the talks.
+
+```{r}
+# Tokenize the text into words
+#=========================
+tidy_talks <- ted_talks %>% 
+  tidytext::unnest_tokens(word, text)
+
+# Remove the common stop words
+#=========================
+ted_talks_nonstop <- tidy_talks %>%
+  dplyr::anti_join(get_stopwords())
+
+#Filtering the talks associated with Seth Godin sorting the words
+#==============================================================
+Seth_words <- ted_talks_nonstop %>%
+  dplyr::filter(speaker == "Seth Godin") %>% 
+  dplyr::count(speaker, word, sort = TRUE)
+
+#Filtering the talks associated with Robert Gupta sorting the words
+#==============================================================
+Robert_words <- ted_talks_nonstop %>%
+  dplyr::filter(speaker == "Robert Gupta") %>% 
+  dplyr::count(speaker, word, sort = TRUE)
+```
+
+```{r,figures-side, fig.show="hold", out.width="50%"}
+par(mar = c(4, 4, .1, .1))
+#plot the frequencies of the words by Seth Godin
+#==============================================================
+Seth_words %>% 
+  dplyr::slice_max(n, n = 10) %>%
+  dplyr::mutate(word = reorder(word, n)) %>%
+  ggplot2::ggplot(aes(n, word)) + ggplot2::geom_col()+labs(title = "Seth Godin")
+
+#plot the frequencies of the words by Robert Gupta
+#==============================================================
+Robert_words %>% 
+  dplyr::slice_max(n,n = 10) %>%
+  dplyr::mutate(word = reorder(word, n)) %>%
+  ggplot2::ggplot(aes(n, word)) + ggplot2::geom_col()+labs(title = "Robert Gupta")
+
+```
+
+The words  "music" and "violin" which signify music played; "laughter"and "applause" signify reaction and the  words "like" and "can","just" have highest counts in the occurrence as observed in the above plot which do not hold significant meaning , such words are removed from further analysis creating custom stop words.  
+
+It can be clearly noticed in the plot that there is no similarity in the frequencies in both sets of texts by the speakers.Word that is far away in the y-axis is the  word that is found more in one set of texts than another. For example,  word  “people” is found in the Seth's texts but not the Robert's texts.
+
+Majority of words are at higher frequencies for Seth Godin  which narrows down towards Robert Seth.In other words, the words used by Seth Godin are way high in frequency than Robert Seth.Also,Seth Godin uses words like "idea","spread" and "remarkable" and Robert Gupta uses word like "change" and "world".
+
+```{r,fig.width=12,fig.height=3}
+#creating custom stop words to remove the words 
+#==============================================================
+custom_stop_words <- tibble(word = c("like","laughter","music","can","just","violin","applause"), lexicon = c("custom"))%>%
+ bind_rows(stop_words)
+
+#Compare the words used by both speakers by selecting only the words whose sum of frequencies across the talks of two speakers is more than 10 times using geom_text_repel
+#==============================================================
+dplyr::bind_rows(Seth_words, Robert_words) %>%
+    anti_join(custom_stop_words) %>%
+  group_by(word) %>%
+  filter(sum(n) > 10) %>%
+  ungroup() %>%
+  pivot_wider(names_from = speaker, values_from = n, values_fill = 0)  %>%
+ ggplot(aes( `Robert Gupta`,`Seth Godin`)) +
+  geom_abline(color = "black", size = 1.2, alpha = 0.8, lty = 2) +geom_text_repel(aes(label = word), max.overlaps =  65) 
+
+```
+
+In order to analyse the sentiments across the talks delivered by the speakers,below table summarizes the percentage of the positive and negative sentiments based on the words associated with each sentiments.It can be interpreted from the table below that Seth Godin's text has maximum percentage(approx 69%) of positive sentiments in his texts whereas Robin Gupta's text has maximum percentage of negative(approx 56%) sentiments comparatively.The negative sentiments is minimum (approx 31%) for Seth Godin's talks and Robert Gupta's talks have average positive sentiments (appox 44%).We would further consider the maximum percentages of each sentiments for further investigation.
+
+```{r}
+
+#sentiment analysis using bing
+#========================================
+speaker_sentiment <- ted_talks_nonstop %>%
+    inner_join(get_sentiments("bing"))
+  
+#sentiment counts per speaker
+#============================================
+  sentiment_counts <- speaker_sentiment %>%
+      count(speaker, sentiment)
+  
+## find the total number of words by each speaker, and percentage of each sentiment
+#==============================================================
+  kable(sentiment_counts %>%
+  group_by(speaker) %>%
+  
+  mutate(total = sum(n), percent = n / total) %>%
+  arrange(desc(percent)),caption = "Speaker sentiment percentage")
+
+# count by word and sentiment grouped by speaker and sentiments
+#==============================================================
+ word_counts <- speaker_sentiment %>%
+    
+   group_by (speaker,sentiment)%>%
+    count(word, sentiment)
+ 
+# filter the word counts of speaker Seth Godin
+#remove the custom stop words,group by speaker and sentiments
+#filter the positive sentiments
+top_positive_words <- word_counts %>%
+    dplyr::filter(speaker == "Seth Godin") %>% 
+  dplyr::slice_max(n, n = 15) %>%
+  anti_join(custom_stop_words) %>%
+    group_by(speaker,sentiment) %>%
+   dplyr::filter(sentiment == "positive")%>%
+    mutate(word = reorder(word, n)) %>%
+    ungroup()
+
+# filter the word counts of speaker Robert Gupta
+#remove the custom stop words,group by speaker and sentiments
+#filter the negative sentiments
+top_negative_words <- word_counts %>%
+    dplyr::filter(speaker == "Robert Gupta") %>% 
+  dplyr::slice_max(n, n = 15) %>%
+  anti_join(custom_stop_words) %>%
+    group_by(speaker,sentiment) %>%
+   dplyr::filter(sentiment == "negative")%>%
+    mutate(word = reorder(word, n)) %>%
+    ungroup()
+     
+```
+
+ Thus, we can view to assess the top n words in the below plot that contribute for each positive and negative sentiments with high percentage for respective speaker depicted from above table.There are involvement of some powerful words like "leading","remarkable","charisma" and "success" in Seth's texts signifying the positive sentiments whereas  use of words like "paranoid","afraid" and "tragic" in Robert's text does depict negative sentiments. 
+ 
+```{r plot,fig.height=4}
+ 
+#combine the negative and positive sentiment   words 
+#plot the sentiments for speaker and sentiments
+dplyr::bind_rows(top_negative_words, top_positive_words) %>%
+ ggplot(aes(n, word,fill = sentiment)) +
+    geom_col(show.legend = FALSE) +
+    facet_wrap(~ speaker+sentiment, scales = "free")+
+          labs(y = "Contribution to sentiment", x = NULL)
+ 
+    
+```
+
+## Discussion
+
+In conclusion , through word frequency comparison it can be derived that the talks delivered by both speaker Seth Godin and Robert Gupta does not have similar words which helps in depicting that the topics delivered by respective speakers belong to different genre.
+
+The sentiment analysis derive that there is more positive influence and use strong words in the talks given by Seth Godin and that can be true as the topics describe about spreading innovative ideas and power of leading.On the other hand, Robert Gupta's talks sight use of  negative emotions which is justified because the talks are about music and treatment and he would have used negative adjectives to describe a moving story or patient.
+
+It was challenging to depict the tone of some words  example "like" was depicted as negative sentiment in the sentiment analysis whereas the speaker intended to use it in a different way then what was depicted.
+
+Further, the analysis can be extended through n-gram analysis which will be helpful for exploratory analyses of the text.This will in turn provide context to the sentiment analysis.This project was limited to only positive and negative sentiments but further various sentiment analysis techniques like "nrc" and "afinn" can be used and compared to identify discrete emotions across the talks.
+
+
+

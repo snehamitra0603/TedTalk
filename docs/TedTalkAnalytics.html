@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Sneha Mitra" />
+
+
+<title>Text analytics</title>
+
+<script src="site_libs/header-attrs-2.12/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Text analytics</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Text analytics</h1>
+<h3 class="subtitle">Text analytics of the TED talks by Seth Godin and
+Robert Gupta</h3>
+<h4 class="author">Sneha Mitra</h4>
+
+</div>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction" id="toc-introduction">Introduction</a></li>
+<li><a href="#methods" id="toc-methods">Methods</a></li>
+<li><a href="#results" id="toc-results">Results</a></li>
+<li><a href="#discussion" id="toc-discussion">Discussion</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The project aims at comparing the TED talks delivered by two speakers
+<strong>Seth Godin</strong> and <strong>Robert Gupta</strong> in terms
+word frequencies and whether there is correlation between the sentiments
+of both speakers.</p>
+<p>The talks involved in this project for analysis are as follows :</p>
+<p>“How to get your ideas to spread” and “The tribes we lead” delivered
+by Seth Godin in the year 2003 and 2009 respectively.</p>
+<p>“Music is medicine, music is sanity” and “On violin and
+cello,”Passacaglia” delivered by Robert Gupta in 2010 and 2011
+respectively.</p>
+<p>Seth Godin is an internationally recognized speaker, popular blogger,
+and global thought leader in innovative business ideas and marketing
+strategy on the other hand Robert Gupta is a violinist with the LA
+Philharmonic and maintains a passionate parallel interest in
+neurobiology and mental health issues.</p>
+</div>
+<div id="methods" class="section level2">
+<h2>Methods</h2>
+<p>In order to compare the words frequencies of both speakers
+,frequently used word is counted by each speaker which will be further
+visualized in bar graphs.Also comparison of words used by both speakers
+is performed by selecting only the words whose sum of frequencies across
+the talks of two speakers is more than 10 times to determine the common
+words used which will be further plotted for visualization.</p>
+<p>For sentiment analysis the bing library is used which simply
+associates a word with a negative or positive valence. At the end we
+count how many words are positive or negative and identify the
+percentage of both negative and positive sentiments to determine the
+proportion of sentiments for each speaker.</p>
+<p>All the above operations are done after the tokenization and removal
+of stop words.</p>
+</div>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<p>The two plots below display the frequency of the words used by the
+respective speakers in their talks.The top three words with highest
+frequencies “people”,“can” and “get” are used by Seth Godin while
+“Nathaniel”,“us” and “talking” are the three most used words by Robert
+Gupta.The word “music” and “violin” with highest frequencies interprets
+the music and violin being played in Rober’s talk.The word “laughter” in
+relatively high frequency in Seth’s text indicate audience’s joyful
+reaction to his talks whereas “applause” in Robert’s text indicate
+admiration of the music being played in the talks.</p>
+<p><img src="TedTalkAnalytics_files/figure-html/figures-side-1.png" width="50%" /><img src="TedTalkAnalytics_files/figure-html/figures-side-2.png" width="50%" /></p>
+<p>The words “music” and “violin” which signify music played;
+“laughter”and “applause” signify reaction and the words “like” and
+“can”,“just” have highest counts in the occurrence as observed in the
+above plot which do not hold significant meaning , such words are
+removed from further analysis creating custom stop words.</p>
+<p>It can be clearly noticed in the plot that there is no similarity in
+the frequencies in both sets of texts by the speakers.Word that is far
+away in the y-axis is the word that is found more in one set of texts
+than another. For example, word “people” is found in the Seth’s texts
+but not the Robert’s texts.</p>
+<p>Majority of words are at higher frequencies for Seth Godin which
+narrows down towards Robert Seth.In other words, the words used by Seth
+Godin are way high in frequency than Robert Seth.Also,Seth Godin uses
+words like “idea”,“spread” and “remarkable” and Robert Gupta uses word
+like “change” and “world”.</p>
+<p><img src="TedTalkAnalytics_files/figure-html/unnamed-chunk-2-1.png" width="1152" /></p>
+<p>In order to analyse the sentiments across the talks delivered by the
+speakers,below table summarizes the percentage of the positive and
+negative sentiments based on the words associated with each
+sentiments.It can be interpreted from the table below that Seth Godin’s
+text has maximum percentage(approx 69%) of positive sentiments in his
+texts whereas Robin Gupta’s text has maximum percentage of
+negative(approx 56%) sentiments comparatively.The negative sentiments is
+minimum (approx 31%) for Seth Godin’s talks and Robert Gupta’s talks
+have average positive sentiments (appox 44%).We would further consider
+the maximum percentages of each sentiments for further
+investigation.</p>
+<table>
+<caption>Speaker sentiment percentage</caption>
+<thead>
+<tr class="header">
+<th align="left">speaker</th>
+<th align="left">sentiment</th>
+<th align="right">n</th>
+<th align="right">total</th>
+<th align="right">percent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Seth Godin</td>
+<td align="left">positive</td>
+<td align="right">172</td>
+<td align="right">251</td>
+<td align="right">0.6852590</td>
+</tr>
+<tr class="even">
+<td align="left">Robert Gupta</td>
+<td align="left">negative</td>
+<td align="right">29</td>
+<td align="right">52</td>
+<td align="right">0.5576923</td>
+</tr>
+<tr class="odd">
+<td align="left">Robert Gupta</td>
+<td align="left">positive</td>
+<td align="right">23</td>
+<td align="right">52</td>
+<td align="right">0.4423077</td>
+</tr>
+<tr class="even">
+<td align="left">Seth Godin</td>
+<td align="left">negative</td>
+<td align="right">79</td>
+<td align="right">251</td>
+<td align="right">0.3147410</td>
+</tr>
+</tbody>
+</table>
+<p>Thus, we can view to assess the top n words in the below plot that
+contribute for each positive and negative sentiments with high
+percentage for respective speaker depicted from above table.There are
+involvement of some powerful words like
+“leading”,“remarkable”,“charisma” and “success” in Seth’s texts
+signifying the positive sentiments whereas use of words like
+“paranoid”,“afraid” and “tragic” in Robert’s text does depict negative
+sentiments.</p>
+<p><img src="TedTalkAnalytics_files/figure-html/plot-1.png" width="672" /></p>
+</div>
+<div id="discussion" class="section level2">
+<h2>Discussion</h2>
+<p>In conclusion , through word frequency comparison it can be derived
+that the talks delivered by both speaker Seth Godin and Robert Gupta
+does not have similar words which helps in depicting that the topics
+delivered by respective speakers belong to different genre.</p>
+<p>The sentiment analysis derive that there is more positive influence
+and use strong words in the talks given by Seth Godin and that can be
+true as the topics describe about spreading innovative ideas and power
+of leading.On the other hand, Robert Gupta’s talks sight use of negative
+emotions which is justified because the talks are about music and
+treatment and he would have used negative adjectives to describe a
+moving story or patient.</p>
+<p>It was challenging to depict the tone of some words example “like”
+was depicted as negative sentiment in the sentiment analysis whereas the
+speaker intended to use it in a different way then what was
+depicted.</p>
+<p>Further, the analysis can be extended through n-gram analysis which
+will be helpful for exploratory analyses of the text.This will in turn
+provide context to the sentiment analysis.This project was limited to
+only positive and negative sentiments but further various sentiment
+analysis techniques like “nrc” and “afinn” can be used and compared to
+identify discrete emotions across the talks.</p>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
